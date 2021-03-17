@@ -1,25 +1,151 @@
 package uk.ac.bris.cs.scotlandyard.model;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
+import java.util.*;
 import javax.annotation.Nonnull;
 
+import org.checkerframework.checker.nullness.Opt;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
-import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
+import uk.ac.bris.cs.scotlandyard.model.Move.*;
+import uk.ac.bris.cs.scotlandyard.model.Piece.*;
+import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.*;
 
-/**
- * cw-model
- * Stage 1: Complete this class
- */
 public final class MyGameStateFactory implements Factory<GameState> {
+    @Nonnull
+    @Override
+    public GameState build(GameSetup setup, Player mrX, ImmutableList<Player> detectives) {
+        return new MyGameState(setup, ImmutableSet.of(MrX.MRX), ImmutableList.of(), mrX, detectives);
+    }
 
-	@Nonnull @Override public GameState build(
-			GameSetup setup,
-			Player mrX,
-			ImmutableList<Player> detectives) {
-		// TODO
-		throw new RuntimeException("Implement me!");
+    private final class MyGameState implements GameState {
+        private GameSetup setup;
+        private ImmutableSet<Piece> remaining;
+        private ImmutableList<LogEntry> log;
+        private Player mrX;
+        private List<Player> detectives;
+        private ImmutableList<Player> everyone;
+        private ImmutableSet<Move> moves;
+        private ImmutableSet<Piece> winner;
 
-	}
+        private MyGameState(
+                final GameSetup setup,
+                final ImmutableSet<Piece> remaining,
+                final ImmutableList<LogEntry> log,
+                final Player mrX,
+                final List<Player> detectives) {
+            if(setup.rounds.isEmpty()) throw new IllegalArgumentException("Rounds is empty");
+            if(setup.graph.nodes().isEmpty()) throw new IllegalArgumentException("Graph is empty");
+            if(mrX == null) throw new NullPointerException("MrX is empty!");
+            if(!mrX.piece().webColour().equals("#000")) throw new IllegalArgumentException("MrX must be a black piece");
 
+            checkDetectives(detectives);
+
+            //Build remaining and everyone lists
+            ImmutableSet.Builder<Piece> pieceBuilder = ImmutableSet.builder();
+            ImmutableList.Builder<Player> everyoneBuilder = ImmutableList.builder();
+
+            pieceBuilder.add(mrX.piece());
+            everyoneBuilder.add(mrX);
+            for(Player p : detectives){
+                pieceBuilder.add(p.piece());
+                everyoneBuilder.add(p);
+            }
+
+            this.setup = setup;
+            this.remaining = pieceBuilder.build();
+            this.log = log;
+            this.mrX = mrX;
+            this.detectives = detectives;
+            this.everyone = everyoneBuilder.build();
+            this.moves = ImmutableSet.of();
+            this.winner = ImmutableSet.of();
+        }
+
+        void checkDetectives(final List<Player> detectives) {
+            if(detectives.isEmpty()) throw new IllegalArgumentException("Detectives is empty");
+
+            for(int i = 0; i < detectives.size(); i++){
+                Player p = detectives.get(i);
+                if (p == null) throw new IllegalArgumentException("One or more detectives are null");
+                if(p.isDetective() && p.tickets().get(Ticket.DOUBLE) != 0) throw new IllegalArgumentException("One or more detectives has a double ticket");
+                if(p.isDetective() && p.tickets().get(Ticket.SECRET) != 0) throw new IllegalArgumentException("One or more detectives has a secret ticket");
+                if(p.isMrX()) throw new IllegalArgumentException("There can't only be one MrX");
+
+                for(int j = i + 1; j < detectives.size(); j++){
+                    if(p.location() == detectives.get(j).location()) throw new IllegalArgumentException("Two players have the same location");
+                }
+            }
+        }
+
+
+        @Nonnull
+        @Override
+        public GameSetup getSetup() {
+            return setup;
+        }
+
+        @Nonnull
+        @Override
+        public ImmutableSet<Piece> getPlayers() {
+            return remaining;
+        }
+
+        @Nonnull
+        @Override
+        public Optional<Integer> getDetectiveLocation(Detective detective) {
+            for(Player p: detectives){
+                if(p.piece() == detective) return Optional.of(p.location());
+            }
+            return Optional.empty();
+        }
+
+        @Nonnull
+        @Override
+        public Optional<TicketBoard> getPlayerTickets(Piece piece) {
+            for(Player p: everyone){
+                if(p.piece() == piece) return Optional.of(new MyTicketBoard(p.tickets()));
+            }
+            return Optional.empty();
+        }
+
+        @Nonnull
+        @Override
+        public ImmutableList<LogEntry> getMrXTravelLog() {
+            return log;
+        }
+
+        @Nonnull
+        @Override
+        public ImmutableSet<Piece> getWinner() {
+            return winner;
+        }
+
+        @Nonnull
+        @Override
+        public ImmutableSet<Move> getAvailableMoves() {
+            return moves;
+        }
+
+        @Override
+        public GameState advance(Move move) {
+            return null;
+        }
+    }
+
+    private class MyTicketBoard implements Board.TicketBoard {
+
+        private final ImmutableMap<Ticket, Integer> tickets;
+
+        public MyTicketBoard(ImmutableMap<Ticket, Integer> tickets) {
+            this.tickets = tickets;
+        }
+
+        @Override
+        public int getCount(@Nonnull Ticket ticket) {
+            return tickets.get(ticket);
+        }
+    }
 }
