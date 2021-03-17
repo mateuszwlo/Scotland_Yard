@@ -20,6 +20,54 @@ public final class MyGameStateFactory implements Factory<GameState> {
         return new MyGameState(setup, ImmutableSet.of(MrX.MRX), ImmutableList.of(), mrX, detectives);
     }
 
+    private static ImmutableSet<Move> makeMoves(
+            final GameSetup setup,
+            final Player mrX,
+            final List<Player> detectives
+            ) {
+        final ArrayList<Move> moves = new ArrayList<Move>();
+
+        for (Player d : detectives) {
+            final ImmutableSet<SingleMove> detectiveMoves = makeSingleMoves(setup, detectives, d, d.location());
+            for (Move m : detectiveMoves) moves.add(m);
+        }
+
+        // TODO implement mrX moves
+
+        return ImmutableSet.copyOf(moves);
+    }
+
+    private static ImmutableSet<SingleMove> makeSingleMoves(
+            GameSetup setup,
+            List<Player> detectives,
+            Player player,
+            int source){
+        final var singleMoves = new ArrayList<SingleMove>();
+        for(int destination : setup.graph.adjacentNodes(source)) {
+            //  If the destination is occupied by a detective, skip
+            boolean isOccupied = false;
+            for (Player p : detectives) {
+                if (p.location() == destination) {
+                    isOccupied = true;
+                    break;
+                }
+            }
+            if (isOccupied) continue;
+
+            //  If the player has a ticket that allows them to go to destination,
+            //  add the move to the array
+            for(Transport t : setup.graph.edgeValueOrDefault(source,destination,ImmutableSet.of())) {
+                final Ticket ticket = t.requiredTicket();
+                if (player.has(ticket)) {
+                    singleMoves.add(new SingleMove(player.piece(), source, ticket, destination));
+                }
+            }
+            // TODO consider the rules of secret moves here
+            //  add moves to the destination via a secret ticket if there are any left with the player
+        }
+        return ImmutableSet.copyOf(singleMoves);
+    }
+
     private final class MyGameState implements GameState {
         private GameSetup setup;
         private ImmutableSet<Piece> remaining;
@@ -60,7 +108,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
             this.mrX = mrX;
             this.detectives = detectives;
             this.everyone = everyoneBuilder.build();
-            this.moves = ImmutableSet.of();
+            this.moves = makeMoves(setup, mrX, detectives);
             this.winner = ImmutableSet.of();
         }
 
@@ -131,7 +179,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
         @Override
         public GameState advance(Move move) {
-            return null;
+            // TODO
+            return new MyGameState(setup, remaining, log, mrX, detectives);
         }
     }
 
