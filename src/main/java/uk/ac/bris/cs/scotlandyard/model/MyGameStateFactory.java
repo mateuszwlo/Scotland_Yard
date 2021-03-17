@@ -72,7 +72,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
                 if (p == null) throw new IllegalArgumentException("One or more detectives are null");
                 if(p.isDetective() && p.tickets().get(Ticket.DOUBLE) != 0) throw new IllegalArgumentException("One or more detectives has a double ticket");
                 if(p.isDetective() && p.tickets().get(Ticket.SECRET) != 0) throw new IllegalArgumentException("One or more detectives has a secret ticket");
-                if(p.isMrX()) throw new IllegalArgumentException("There can't only be one MrX");
+                if(p.isMrX()) throw new IllegalArgumentException("There can only be one MrX");
 
                 for(int j = i + 1; j < detectives.size(); j++){
                     if(p.location() == detectives.get(j).location()) throw new IllegalArgumentException("Two players have the same location");
