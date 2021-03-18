@@ -32,16 +32,16 @@ public final class MyModelFactory implements Factory<Model> {
 			@Override
 			public void registerObserver(@Nonnull Observer observer) {
 				final ArrayList<Observer> newObservers = new ArrayList<>(observers);
-				if(!newObservers.contains(observer)) newObservers.add(observer);
+				if (!newObservers.contains(observer)) newObservers.add(observer);
 				else throw new IllegalArgumentException();
 				observers = ImmutableSet.copyOf(newObservers);
 			}
 
 			@Override
 			public void unregisterObserver(@Nonnull Observer observer) {
-				if(observer == null) throw new NullPointerException();
+				if (observer == null) throw new NullPointerException();
 				final ArrayList<Observer> newObservers = new ArrayList<>(observers);
-				if(newObservers.contains(observer)) newObservers.remove(observer);
+				if (newObservers.contains(observer)) newObservers.remove(observer);
 				else throw new IllegalArgumentException();
 				observers = ImmutableSet.copyOf(newObservers);
 			}
@@ -52,18 +52,16 @@ public final class MyModelFactory implements Factory<Model> {
 				return observers;
 			}
 
+			private void notifyObservers(Observer.Event event) {
+				for (Observer o: observers) o.onModelChanged(gameState, event);
+			}
+
 			@Override
 			public void chooseMove(@Nonnull Move move) {
 				gameState = gameState.advance(move);
-				for (Observer o: observers) {
-					o.onModelChanged(gameState, Observer.Event.MOVE_MADE);
-				}
+				notifyObservers(Observer.Event.MOVE_MADE);
 
-				if(!gameState.getWinner().isEmpty()){
-					for (Observer o: observers) {
-						o.onModelChanged(gameState, Observer.Event.GAME_OVER);
-					}
-				}
+				if (!gameState.getWinner().isEmpty()) notifyObservers(Observer.Event.GAME_OVER);
 			}
 		};
 	}
