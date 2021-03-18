@@ -141,11 +141,27 @@ public final class MyGameStateFactory implements Factory<GameState> {
                     break;
                 }
             }
+            boolean detectivesHaveTickets = false;
+            for(Player d : detectives){
+                if(d.hasAnyTickets()) {
+                    detectivesHaveTickets = true;
+                    break;
+                }
+            }
+
+            if(!detectivesHaveTickets) this.winner = ImmutableSet.of(mrX.piece());
 
             // if there have been 24 rounds -> mrX wins
-            if (log.size() >= 24) this.winner = ImmutableSet.of(mrX.piece());
+            if (setup.rounds.size() == log.size()) this.winner = ImmutableSet.of(mrX.piece());
             // if it's the turn opf the detectives and the detectives have no moves left -> mrX wins
-            if (!remaining.contains(mrX.piece())) {
+            if (remaining.contains(mrX.piece())) {
+                if(moves.isEmpty()) this.winner = ImmutableSet.copyOf(
+                        detectives.stream()
+                                .map(Player::piece)
+                                .collect(Collectors.toList())
+                );
+            }
+            else {
                 boolean detectivesHaveMoves = false;
                 for (Move m: this.moves) {
                     if(m.commencedBy().isDetective()) {
@@ -153,7 +169,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
                         break;
                     }
                 }
-                if (!detectivesHaveMoves) this.winner = ImmutableSet.of(mrX.piece());
+                if (!detectivesHaveMoves) {
+                    this.winner = ImmutableSet.of(mrX.piece());
+                }
             }
 
             if(this.winner == null) this.winner = ImmutableSet.of();
