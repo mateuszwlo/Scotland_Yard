@@ -28,13 +28,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
             final ImmutableSet<Piece> remaining,
             final ImmutableList<LogEntry> log
             ) {
-        final ArrayList<Move> moves = new ArrayList<Move>();
+        final ArrayList<Move> moves = new ArrayList<>();
 
         if (remaining.contains(mrX.piece())) {
             final ImmutableSet<SingleMove> mrXSingleMoves = makeSingleMoves(setup, detectives, mrX, mrX.location());
             for (Move m : mrXSingleMoves) {
                 moves.add(m);
-                if (mrX.has(Ticket.DOUBLE) && setup.rounds.contains(false)) {
+                if (mrX.has(Ticket.DOUBLE) && setup.rounds.size() - log.size() >= 2) {
                     final ImmutableSet<SingleMove> doubleMoves = makeSingleMoves(setup, detectives, mrX, m.destination());
                     for (Move m2: doubleMoves) {
                         final Ticket ticket1 = m.tickets().iterator().next();
@@ -259,18 +259,24 @@ public final class MyGameStateFactory implements Factory<GameState> {
             newRemaining.remove(move.commencedBy());
 
             if (move.commencedBy().isMrX()) {
-                mrX = mrX.at(move.destination());
                 if(move.isDouble()){
                     DoubleMove dm = (DoubleMove) move;
-                    newLog.add(new LogEntry(dm.ticket1, dm.destination1));
-                    newLog.add(new LogEntry(dm.ticket2, dm.destination2));
+                    if(!setup.rounds.get(newLog.size())) newLog.add(LogEntry.hidden(dm.ticket1));
+                    else newLog.add(LogEntry.reveal(dm.ticket1, dm.destination1));
+
+                    if(!setup.rounds.get(newLog.size())) newLog.add(LogEntry.hidden(dm.ticket2));
+                    else newLog.add(LogEntry.reveal(dm.ticket2, dm.destination2));
                 }
-                else newLog.add(new LogEntry(move.tickets().iterator().next(), move.destination()));
+                else if(!setup.rounds.get(newLog.size())) newLog.add(LogEntry.hidden(move.tickets().iterator().next()));
+                else newLog.add(LogEntry.reveal(move.tickets().iterator().next(), move.destination()));
+
                 mrX = mrX.use(move.tickets());
 
                 for(Player p : detectives){
                     if(p.hasAnyTickets()) newRemaining.add(p.piece());
                 }
+
+                mrX = mrX.at(move.destination());
             }
             else {
                 for (int i = 0; i < newDetectives.size(); i++) {
