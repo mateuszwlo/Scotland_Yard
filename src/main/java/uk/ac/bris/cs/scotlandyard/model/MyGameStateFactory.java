@@ -17,17 +17,23 @@ public final class MyGameStateFactory implements Factory<GameState> {
     @Nonnull
     @Override
     public GameState build(GameSetup setup, Player mrX, ImmutableList<Player> detectives) {
-        return new MyGameState(setup, ImmutableSet.of(MrX.MRX), ImmutableList.of(), mrX, detectives);
+        //TODO: Ask a TA why remaining is only mrX at the first round
+        ImmutableSet.Builder<Piece> everyoneBuilder = ImmutableSet.builder();
+        everyoneBuilder.add(mrX.piece());
+        for(Player p : detectives) everyoneBuilder.add(p.piece());
+        return new MyGameState(setup, everyoneBuilder.build(), ImmutableList.of(), mrX, detectives);
     }
 
     private static ImmutableSet<Move> makeMoves(
             final GameSetup setup,
             final Player mrX,
-            final List<Player> detectives
+            final List<Player> detectives,
+            final ImmutableSet<Piece> remaining
             ) {
         final ArrayList<Move> moves = new ArrayList<Move>();
 
         for (Player d : detectives) {
+            if (!remaining.contains(d.piece())) continue;
             final ImmutableSet<SingleMove> detectiveMoves = makeSingleMoves(setup, detectives, d, d.location());
             for (Move m : detectiveMoves) moves.add(m);
         }
@@ -92,23 +98,18 @@ public final class MyGameStateFactory implements Factory<GameState> {
             checkDetectives(detectives);
 
             //Build remaining and everyone lists
-            ImmutableSet.Builder<Piece> pieceBuilder = ImmutableSet.builder();
             ImmutableList.Builder<Player> everyoneBuilder = ImmutableList.builder();
 
-            pieceBuilder.add(mrX.piece());
             everyoneBuilder.add(mrX);
-            for(Player p : detectives){
-                pieceBuilder.add(p.piece());
-                everyoneBuilder.add(p);
-            }
+            for(Player p : detectives) everyoneBuilder.add(p);
 
             this.setup = setup;
-            this.remaining = pieceBuilder.build();
+            this.remaining = remaining;
             this.log = log;
             this.mrX = mrX;
             this.detectives = detectives;
             this.everyone = everyoneBuilder.build();
-            this.moves = makeMoves(setup, mrX, detectives);
+            this.moves = makeMoves(setup, mrX, detectives, remaining);
             this.winner = ImmutableSet.of();
         }
 
@@ -127,7 +128,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
                 }
             }
         }
-
 
         @Nonnull
         @Override
@@ -179,8 +179,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
         @Override
         public GameState advance(Move move) {
-            // TODO
-            return new MyGameState(setup, remaining, log, mrX, detectives);
+            List<Piece> newRemaining = new ArrayList<>(remaining);
+            newRemaining.remove(move.commencedBy());
+
+            return new MyGameState(setup, ImmutableSet.copyOf(newRemaining), log, mrX, detectives);
         }
     }
 
