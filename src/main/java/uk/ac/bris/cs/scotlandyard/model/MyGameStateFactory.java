@@ -152,7 +152,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
             if(!detectivesHaveTickets) this.winner = ImmutableSet.of(mrX.piece());
 
             // if there have been 24 rounds -> mrX wins
-            if (setup.rounds.size() == log.size()) this.winner = ImmutableSet.of(mrX.piece());
+            if (setup.rounds.size() == log.size() && remaining.contains(mrX.piece())) this.winner = ImmutableSet.of(mrX.piece());
             // if it's the turn opf the detectives and the detectives have no moves left -> mrX wins
             if (remaining.contains(mrX.piece())) {
                 if(moves.isEmpty()) this.winner = ImmutableSet.copyOf(
@@ -249,7 +249,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
         @Override
         public GameState advance(Move move) {
-            //if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
+            if(!moves.contains(move)) {
+                throw new IllegalArgumentException("Illegal move: "+move);
+            }
 
             List<Piece> newRemaining = new ArrayList<>(remaining);
             List<Player> newDetectives = new ArrayList<>(detectives);
@@ -258,9 +260,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
             if (move.commencedBy().isMrX()) {
                 mrX = mrX.at(move.destination());
-                for(Ticket t : move.tickets()) {
-                    newLog.add(new LogEntry(t, move.destination()));
+                if(move.isDouble()){
+                    DoubleMove dm = (DoubleMove) move;
+                    newLog.add(new LogEntry(dm.ticket1, dm.destination1));
+                    newLog.add(new LogEntry(dm.ticket2, dm.destination2));
                 }
+                else newLog.add(new LogEntry(move.tickets().iterator().next(), move.destination()));
                 mrX = mrX.use(move.tickets());
 
                 for(Player p : detectives){

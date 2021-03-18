@@ -30,6 +30,7 @@ public interface Move extends Serializable {
 	 */
 	int source();
 	int destination();
+	boolean isDouble();
 	/**
 	 * Visits all possible move types that implement {@link Move}
 	 *
@@ -100,6 +101,7 @@ public interface Move extends Serializable {
 		@Nonnull @Override public Iterable<Ticket> tickets() { return ImmutableList.of(ticket); }
 		@Override public int source() { return source; }
 		@Override public int destination() { return destination; }
+		@Override public boolean isDouble() { return false; }
 		@Override public <T> T visit(Visitor<T> visitor) { return visitor.visit(this); }
 		@Override public boolean equals(Object o) {
 			if (this == o) return true;
@@ -152,6 +154,7 @@ public interface Move extends Serializable {
 		public Iterable<Ticket> tickets() { return ImmutableList.of(ticket1, ticket2, DOUBLE);}
 		@Override public int source() { return source; }
 		@Override public int destination() { return destination2; }
+		@Override public boolean isDouble() { return true; }
 		@Override public <T> T visit(Visitor<T> visitor) { return visitor.visit(this); }
 		@Override public boolean equals(Object o) {
 			if (this == o) return true;
