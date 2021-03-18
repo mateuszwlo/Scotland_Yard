@@ -24,11 +24,11 @@ public interface Move extends Serializable {
 	/**
 	 * @return the tickets used to complete this move.
 	 */
-	@Nonnull ImmutableList<Ticket> tickets();/**
+	@Nonnull Iterable<Ticket> tickets();
+	/**
 	 * @return the source of this move (i.e where the player is at before the move)
 	 */
 	int source();
-	int destination();
 	/**
 	 * Visits all possible move types that implement {@link Move}
 	 *
@@ -96,9 +96,8 @@ public interface Move extends Serializable {
 			this.destination = destination;
 		}
 		@Nonnull @Override public Piece commencedBy() { return piece; }
-		@Nonnull @Override public ImmutableList<Ticket> tickets() { return ImmutableList.of(ticket); }
+		@Nonnull @Override public Iterable<Ticket> tickets() { return ImmutableList.of(ticket); }
 		@Override public int source() { return source; }
-		@Override public int destination() { return destination; }
 		@Override public <T> T visit(Visitor<T> visitor) { return visitor.visit(this); }
 		@Override public boolean equals(Object o) {
 			if (this == o) return true;
@@ -148,9 +147,8 @@ public interface Move extends Serializable {
 		}
 		@Nonnull @Override public Piece commencedBy() { return piece; }
 		@Nonnull @Override
-		public ImmutableList<Ticket> tickets() { return ImmutableList.of(ticket1, ticket2, DOUBLE);}
+		public Iterable<Ticket> tickets() { return ImmutableList.of(ticket1, ticket2, DOUBLE);}
 		@Override public int source() { return source; }
-		@Override public int destination() { return destination2; }
 		@Override public <T> T visit(Visitor<T> visitor) { return visitor.visit(this); }
 		@Override public boolean equals(Object o) {
 			if (this == o) return true;

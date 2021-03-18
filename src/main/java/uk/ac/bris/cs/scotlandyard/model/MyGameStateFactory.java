@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import com.google.common.collect.Iterables;
 import org.checkerframework.checker.nullness.Opt;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.Move.*;
@@ -34,14 +35,14 @@ public final class MyGameStateFactory implements Factory<GameState> {
         if (remaining.contains(mrX.piece())) {
             final ImmutableSet<SingleMove> mrXSingleMoves = makeSingleMoves(setup, detectives, mrX, mrX.location());
             moves.addAll(mrXSingleMoves);
-            for (Move m : mrXSingleMoves) {
+            for (SingleMove m : mrXSingleMoves) {
                 if (mrX.has(Ticket.DOUBLE) && setup.rounds.size() - log.size() >= 2) {
-                    final ImmutableSet<SingleMove> doubleMoves = makeSingleMoves(setup, detectives, mrX, m.destination());
-                    for (Move m2: doubleMoves) {
-                        final Ticket ticket1 = m.tickets().get(0);
-                        final Ticket ticket2 = m2.tickets().get(0);
+                    final ImmutableSet<SingleMove> doubleMoves = makeSingleMoves(setup, detectives, mrX, m.destination);
+                    for (SingleMove m2: doubleMoves) {
+                        final Ticket ticket1 = Iterables.getFirst(m.tickets(), null);
+                        final Ticket ticket2 = Iterables.getFirst(m2.tickets(), null);
                         if (ticket1 != ticket2 || mrX.hasAtLeast(ticket1, 2)) {
-                            moves.add(new DoubleMove(mrX.piece(), mrX.location(), ticket1, m.destination(), ticket2, m2.destination()));
+                            moves.add(new DoubleMove(mrX.piece(), mrX.location(), ticket1, m.destination, ticket2, m2.destination));
                         }
                     }
                 }
@@ -107,7 +108,11 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
         boolean detectivesHaveTickets = false;
         for (Player d : gameState.detectives) {
-            if (d.hasAnyTickets()) {
+            boolean dHasAnyTickets = false;
+            for (Ticket t : d.tickets().keySet()) {
+                if (d.has(t)) dHasAnyTickets = true;
+            }
+            if (dHasAnyTickets) {
                 detectivesHaveTickets = true;
                 break;
             }
@@ -266,10 +271,11 @@ public final class MyGameStateFactory implements Factory<GameState> {
         }
 
         ImmutableList<LogEntry> singleMoveFunction(ImmutableList<LogEntry> log, Move move) {
-            return addToLog(log, move.tickets().get(0), move.destination());
+            SingleMove sm = (SingleMove) move;
+            return addToLog(log, Iterables.getFirst(move.tickets(), null), sm.destination);
         }
 
-        ImmutableList<LogEntry> doubleMoveFunction(ImmutableList<LogEntry> log, Move move){
+        ImmutableList<LogEntry> doubleMoveFunction(ImmutableList<LogEntry> log, Move move) {
             DoubleMove dm = (DoubleMove) move;
             final ImmutableList<LogEntry> logWithFirstMove = addToLog(log, dm.ticket1, dm.destination1);
             return addToLog(logWithFirstMove, dm.ticket2, dm.destination2);
@@ -286,22 +292,31 @@ public final class MyGameStateFactory implements Factory<GameState> {
             newRemaining.remove(move.commencedBy());
 
             if (move.commencedBy().isMrX()) {
-                newMrX = newMrX.at(move.destination());
+                final int destination = move.visit(new FunctionalVisitor<Integer>(
+                        m -> ((SingleMove) m).destination,
+                        m -> ((DoubleMove) m).destination2
+                ));
+                newMrX = newMrX.at(destination);
                 newMrX = newMrX.use(move.tickets());
                 newLog = move.visit(new FunctionalVisitor<ImmutableList<LogEntry>>(
-                        singleMove -> singleMoveFunction(log, move),
-                        doubleMove -> doubleMoveFunction(log, move)
+                        m -> singleMoveFunction(log, move),
+                        m -> doubleMoveFunction(log, move)
                 ));
 
-                for (Player p : detectives) {
-                    if (p.hasAnyTickets()) newRemaining.add(p.piece());
+                for (Player d : detectives) {
+                    boolean dHasAnyTickets = false;
+                    for (Ticket t : d.tickets().keySet()) {
+                        if (d.has(t)) dHasAnyTickets = true;
+                    }
+                    if (dHasAnyTickets) newRemaining.add(d.piece());
                 }
             }
             else {
                 for (int i = 0; i < newDetectives.size(); i++) {
                     Player d = newDetectives.get(i);
                     if (d.piece() == move.commencedBy()) {
-                        newDetectives.set(i, d.at(move.destination()));
+                        SingleMove sm = (SingleMove) move;
+                        newDetectives.set(i, d.at(sm.destination));
                         d = newDetectives.get(i);
                         newDetectives.set(i, d.use(move.tickets()));
                         newMrX = newMrX.give(move.tickets());

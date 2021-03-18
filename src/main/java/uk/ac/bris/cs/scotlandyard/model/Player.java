@@ -60,14 +60,6 @@ public final class Player {
 	public boolean hasAtLeast(@Nonnull Ticket ticket, int count) {
 		return tickets.getOrDefault(Objects.requireNonNull(ticket), 0) >= count;
 	}
-
-	public boolean hasAnyTickets() {
-		for(Ticket t : tickets.keySet()){
-			if(tickets.get(t) > 0) return true;
-		}
-
-		return false;
-	}
 	/**
 	 * See {@link #give(Ticket)}
 	 *
