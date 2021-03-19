@@ -33,7 +33,7 @@ public final class MyModelFactory implements Factory<Model> {
 			public void registerObserver(@Nonnull Observer observer) {
 				final ArrayList<Observer> newObservers = new ArrayList<>(observers);
 				if (!newObservers.contains(observer)) newObservers.add(observer);
-				else throw new IllegalArgumentException();
+				else throw new IllegalArgumentException(); // duplicate observers are not allowed
 				observers = ImmutableSet.copyOf(newObservers);
 			}
 
@@ -42,7 +42,7 @@ public final class MyModelFactory implements Factory<Model> {
 				if (observer == null) throw new NullPointerException();
 				final ArrayList<Observer> newObservers = new ArrayList<>(observers);
 				if (newObservers.contains(observer)) newObservers.remove(observer);
-				else throw new IllegalArgumentException();
+				else throw new IllegalArgumentException(); // observer was never registered
 				observers = ImmutableSet.copyOf(newObservers);
 			}
 
@@ -61,6 +61,7 @@ public final class MyModelFactory implements Factory<Model> {
 				gameState = gameState.advance(move);
 				notifyObservers(Observer.Event.MOVE_MADE);
 
+				// check if there's a winner
 				if (!gameState.getWinner().isEmpty()) notifyObservers(Observer.Event.GAME_OVER);
 			}
 		};
