@@ -283,12 +283,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
             return ImmutableList.copyOf(newLog);
         }
 
-        ImmutableList<LogEntry> singleMoveFunction(ImmutableList<LogEntry> log, Move move) {
+        ImmutableList<LogEntry> addSingleMoveToLog(ImmutableList<LogEntry> log, Move move) {
             SingleMove sm = (SingleMove) move;
             return addToLog(log, Iterables.getFirst(move.tickets(), null), sm.destination);
         }
 
-        ImmutableList<LogEntry> doubleMoveFunction(ImmutableList<LogEntry> log, Move move) {
+        ImmutableList<LogEntry> addDoubleMoveToLog(ImmutableList<LogEntry> log, Move move) {
             DoubleMove dm = (DoubleMove) move;
             final ImmutableList<LogEntry> logWithFirstMove = addToLog(log, dm.ticket1, dm.destination1);
             return addToLog(logWithFirstMove, dm.ticket2, dm.destination2);
@@ -315,8 +315,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
                 newMrX = newMrX.use(move.tickets()); // remove the ticket(s)
                 // add moves to log
                 newLog = move.visit(new FunctionalVisitor<ImmutableList<LogEntry>>(
-                        m -> singleMoveFunction(log, move),
-                        m -> doubleMoveFunction(log, move)
+                        m -> addSingleMoveToLog(log, move),
+                        m -> addDoubleMoveToLog(log, move)
                 ));
 
                 // remaining should now be a list of all the detectives who have any tickets left
